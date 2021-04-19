@@ -5,8 +5,6 @@ Template Component main class.
 import logging
 import os
 from pathlib import Path
-import requests
-from urllib.parse import urlencode
 
 from keboola.component import CommonInterface
 from keboola.http_client import HttpClient
