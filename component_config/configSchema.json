@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "title": "Google Cloud Storage Writer",
+  "required": [
+    "client_id",
+    "#client_secret",
+    "#refresh_token"
+  ],
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "title": "Client Id"
+    },
+    "#client_secret": {
+      "type": "string",
+      "format": "password",
+      "title": "Client Secret"
+    },
+    "#refresh_token": {
+      "type": "string",
+      "format": "password",
+      "title": "Refresh Token"
+    }
+  }
+}

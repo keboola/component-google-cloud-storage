@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "title": "Google Cloud Storage Writer",
+  "required": [
+    "bucket_name",
+    "append_date"
+  ],
+  "properties": {
+    "bucket_name": {
+      "type": "string",
+      "title": "Google Cloud Storage bucket name",
+      "description": "e.g. my_gcs_bucket",
+      "propertyOrder": 60
+    },
+    "append_date": {
+      "enum": [
+        0,
+        1
+      ],
+      "type": "number",
+      "title": "Append timestamp",
+      "default": 0,
+      "options": {
+        "enum_titles": [
+          "No",
+          "Yes"
+        ]
+      },
+      "description": "Appends timestamp to result file name",
+      "propertyOrder": 5200
+    }
+  }
+}
