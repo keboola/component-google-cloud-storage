@@ -2,32 +2,22 @@
   "type": "object",
   "title": "Google Cloud Storage Writer",
   "required": [
-    "bucket_name",
-    "append_date"
+    "bucket_name"
   ],
   "properties": {
     "bucket_name": {
       "type": "string",
       "title": "Google Cloud Storage bucket name",
       "description": "e.g. my_gcs_bucket",
-      "propertyOrder": 60
+      "propertyOrder": 10
     },
     "append_date": {
-      "enum": [
-        0,
-        1
-      ],
-      "type": "number",
+      "type": "boolean",
       "title": "Append timestamp",
-      "default": 0,
-      "options": {
-        "enum_titles": [
-          "No",
-          "Yes"
-        ]
-      },
-      "description": "Appends timestamp to result file name",
-      "propertyOrder": 5200
+      "format": "checkbox",
+      "default": false,
+      "description": "Append timestamp to file name test.csv uploaded 01.02.2021 03:44:55 would be test_20210201034455"
+      "propertyOrder": 30
     }
   }
 }

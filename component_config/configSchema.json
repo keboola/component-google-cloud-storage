@@ -1,1 +1,12 @@
-{}
+{
+  "type": "object",
+  "title": "Google Cloud Storage Service Account login",
+  "properties": {
+    "#service_account_key": {
+      "type": "string",
+      "title": "JSON key downloaded from GCP service account",
+      "description": "JSON key downloaded from GCP service account",
+      "propertyOrder": 1
+    }
+  }
+}
