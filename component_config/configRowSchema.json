@@ -16,7 +16,7 @@
       "title": "Append timestamp",
       "format": "checkbox",
       "default": false,
-      "description": "Append timestamp to file name test.csv uploaded 01.02.2021 03:44:55 would be test_20210201034455"
+      "description": "Append timestamp to file name test.csv uploaded 01.02.2021 03:44:55 would be test_20210201034455",
       "propertyOrder": 30
     }
   }
