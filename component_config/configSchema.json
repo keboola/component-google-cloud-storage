@@ -1,6 +1,7 @@
 {
   "type": "object",
   "title": "Google Cloud Storage Service Account login",
+  "required": [],
   "properties": {
     "#service_account_key": {
       "type": "string",
