@@ -4,6 +4,7 @@ Template Component main class.
 '''
 import logging
 import os
+import json
 from datetime import datetime
 from pathlib import Path
 from keboola.component import CommonInterface
@@ -57,18 +58,15 @@ class Component(CommonInterface):
         Main execution code
         '''
         params = self.configuration.parameters
-
         service_account_credentials = params.get(KEY_SERVICE_ACCOUNT)
         client_id_credentials = self.configuration.oauth_credentials
-
-        append_date = params[KEY_APPENDDATE]
-
         bucket_name = params.get(KEY_BUCKET_NAME)
         storage_client = StorageClient.get_storage_client(bucket_name,
                                                           service_account_credentials=service_account_credentials,
                                                           client_id_credentials=client_id_credentials)
 
         files_and_tables = self.get_files_and_tables()
+        append_date = params[KEY_APPENDDATE]
         for file in files_and_tables:
             self.upload_file(storage_client, bucket_name, file, append_date)
 
@@ -97,7 +95,6 @@ class Component(CommonInterface):
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_filename(source_file_path)
-
         logging.info(f"File {source_file_path} uploaded to {destination_blob_name}.")
 
 
@@ -107,7 +104,8 @@ class StorageClient:
     def get_storage_client(bucket_name, client_id_credentials=None, service_account_credentials=None):
 
         if service_account_credentials:
-            storage_client = StorageClient._get_service_account_storage_client(service_account_credentials)
+            service_account_key = KeyCredentials(service_account_credentials).key
+            storage_client = StorageClient._get_service_account_storage_client(service_account_key)
 
         elif client_id_credentials:
             client_id = client_id_credentials[KEY_CLIENT_ID]
@@ -115,6 +113,9 @@ class StorageClient:
             refresh_token = client_id_credentials[KEY_AUTH_DATA][KEY_REFRESH_TOKEN]
             storage_client = StorageClient._get_client_id_storage_client(client_id, client_secret, refresh_token,
                                                                          bucket_name)
+        else:
+            raise ValueError("No Authentication method was filled in, either authorize via instant authorization "
+                             "or a service account key.")
         return storage_client
 
     @staticmethod
@@ -135,6 +136,32 @@ class StorageClient:
         logging.info(f"Uploading to Google Cloud Storage using {service_account_credentials['client_email']} "
                      f"service account")
         return storage_client
+
+
+class KeyCredentials:
+    REQUIRED_KEY_PARAMETERS = ["client_email", "token_uri", "private_key", "project_id"]
+
+    def __init__(self, key_string):
+        self.key = self.parse_key_string(key_string)
+        self.validate_key()
+
+    @staticmethod
+    def parse_key_string(key_string):
+        try:
+            key = json.loads(key_string, strict=False)
+        except:
+            raise ValueError("The service account key format is incorrect, copy and paste the whole JSON content "
+                             "of the key file into the text field")
+        return key
+
+    def validate_key(self):
+        missing_fields = []
+        for par in self.REQUIRED_KEY_PARAMETERS:
+            if not self.key.get(par):
+                missing_fields.append(par)
+
+        if missing_fields:
+            raise ValueError(f'Google service account key is missing mandatory fields: {missing_fields} ')
 
 
 """
