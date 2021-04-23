@@ -61,9 +61,9 @@ class Component(CommonInterface):
         service_account_credentials = params.get(KEY_SERVICE_ACCOUNT)
         client_id_credentials = self.configuration.oauth_credentials
         bucket_name = params.get(KEY_BUCKET_NAME)
-        storage_client = StorageClient.get_storage_client(bucket_name,
-                                                          service_account_credentials=service_account_credentials,
-                                                          client_id_credentials=client_id_credentials)
+        storage_client = StorageClient(bucket_name,
+                                       service_account_credentials=service_account_credentials,
+                                       client_id_credentials=client_id_credentials)
 
         files_and_tables = self.get_files_and_tables()
         append_date = params[KEY_APPENDDATE]
@@ -98,44 +98,49 @@ class Component(CommonInterface):
         logging.info(f"File {source_file_path} uploaded to {destination_blob_name}.")
 
 
-class StorageClient:
+class StorageClient(storage.Client):
 
-    @staticmethod
-    def get_storage_client(bucket_name, client_id_credentials=None, service_account_credentials=None):
+    def __init__(self, bucket_name, client_id_credentials=None, service_account_credentials=None):
+        credentials, project_name = self._get_storage_credentials(bucket_name,
+                                                                  client_id_credentials,
+                                                                  service_account_credentials)
+        super().__init__(credentials=credentials, project=project_name)
 
+    def _get_storage_credentials(self, bucket_name, client_id_credentials, service_account_credentials):
         if service_account_credentials:
             service_account_key = KeyCredentials(service_account_credentials).key
-            storage_client = StorageClient._get_service_account_storage_client(service_account_key)
+            credentials, project_name = self._get_service_account_credentials(service_account_key)
 
         elif client_id_credentials:
             client_id = client_id_credentials[KEY_CLIENT_ID]
             client_secret = client_id_credentials[KEY_CLIENT_SECRET]
             refresh_token = client_id_credentials[KEY_AUTH_DATA][KEY_REFRESH_TOKEN]
-            storage_client = StorageClient._get_client_id_storage_client(client_id, client_secret, refresh_token,
-                                                                         bucket_name)
+            credentials, project_name = self._get_client_id_credentials(client_id,
+                                                                        client_secret,
+                                                                        refresh_token,
+                                                                        bucket_name)
         else:
             raise ValueError("No Authentication method was filled in, either authorize via instant authorization "
                              "or a service account key.")
-        return storage_client
+        return credentials, project_name
 
     @staticmethod
-    def _get_client_id_storage_client(client_id, client_secret, refresh_token, bucket_name):
+    def _get_client_id_credentials(client_id, client_secret, refresh_token, bucket_name):
         credentials = ClientIdCredentials(None, client_id=client_id,
                                           client_secret=client_secret,
                                           refresh_token=refresh_token,
                                           token_uri=CLIENT_ID_TOKEN_URI)
         request = requests.Request()
         credentials.refresh(request)
-        storage_client = storage.Client(credentials=credentials, project=bucket_name)
-        return storage_client
+        return credentials, bucket_name
 
     @staticmethod
-    def _get_service_account_storage_client(service_account_credentials):
+    def _get_service_account_credentials(service_account_credentials):
         credentials = ServiceCredentials.from_service_account_info(service_account_credentials)
-        storage_client = storage.Client(credentials=credentials, project=service_account_credentials["project_id"])
+        project_name = service_account_credentials["project_id"]
         logging.info(f"Uploading to Google Cloud Storage using {service_account_credentials['client_email']} "
                      f"service account")
-        return storage_client
+        return credentials, project_name
 
 
 class KeyCredentials:
