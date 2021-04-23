@@ -149,9 +149,9 @@ class KeyCredentials:
     def parse_key_string(key_string):
         try:
             key = json.loads(key_string, strict=False)
-        except:
-            raise ValueError("The service account key format is incorrect, copy and paste the whole JSON content "
-                             "of the key file into the text field")
+        except ValueError:
+            logging.error("The service account key format is incorrect, copy and paste the whole JSON content "
+                          "of the key file into the text field")
         return key
 
     def validate_key(self):
