@@ -1,1 +1,1 @@
-Testing functional sample extractor for purposes of the python component template. 
+Google Cloud Storage is a online file storage services for storing data on the Google Cloud Platform
