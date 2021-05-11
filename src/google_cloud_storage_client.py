@@ -1,5 +1,4 @@
 import logging
-import json
 from google.cloud import storage
 from google.auth.transport import requests
 from google.oauth2.credentials import Credentials as ClientIdCredentials
@@ -25,7 +24,6 @@ class StorageClient(storage.Client):
     def _get_storage_credentials(self, bucket_name, client_id_credentials, service_account_json_key):
         if service_account_json_key:
             credentials, project_name = self._get_service_account_credentials(service_account_json_key)
-
         elif client_id_credentials:
             client_id = client_id_credentials[KEY_CLIENT_ID]
             client_secret = client_id_credentials[KEY_CLIENT_SECRET]
@@ -62,7 +60,3 @@ class StorageClient(storage.Client):
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_filename(source_file_path)
         logging.info(f"File {source_file_path} uploaded to {destination_blob_name}.")
-
-
-
-

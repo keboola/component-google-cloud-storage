@@ -101,7 +101,7 @@ class KeyCredentials:
             key = json.loads(key_string, strict=False)
         except ValueError:
             raise UserException("The service account key format is incorrect, copy and paste the whole JSON content "
-                          "of the key file into the text field")
+                                "of the key file into the text field")
         return key
 
     def validate_key(self):
