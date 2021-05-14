@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 from keboola.component import CommonInterface
-from src.google_cloud_storage.client import StorageClient
+from google_cloud_storage.client import StorageClient
 from google.auth.exceptions import GoogleAuthError
 
 KEY_BUCKET_NAME = "bucket_name"
