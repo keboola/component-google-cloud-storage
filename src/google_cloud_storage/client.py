@@ -49,7 +49,10 @@ class StorageClient(storage.Client):
 
     @staticmethod
     def _get_service_account_credentials(service_account_credentials):
-        credentials = ServiceCredentials.from_service_account_info(service_account_credentials)
+        try:
+            credentials = ServiceCredentials.from_service_account_info(service_account_credentials)
+        except ValueError:
+            raise
         project_name = service_account_credentials["project_id"]
         logging.info(f"Uploading to Google Cloud Storage using {service_account_credentials['client_email']} "
                      f"service account")

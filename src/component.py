@@ -8,14 +8,13 @@ import json
 from datetime import datetime
 from pathlib import Path
 from keboola.component import CommonInterface
-from google_cloud_storage_client import StorageClient
+from src.google_cloud_storage.client import StorageClient
+from google.auth.exceptions import GoogleAuthError
 
 KEY_BUCKET_NAME = "bucket_name"
 KEY_APPENDDATE = "append_date"
 KEY_SERVICE_ACCOUNT = "#service_account_key"
 
-# list of mandatory parameters => if some is missing,
-# component will fail with readable message on initialization.
 REQUIRED_PARAMETERS = [KEY_BUCKET_NAME]
 REQUIRED_IMAGE_PARS = []
 
@@ -58,9 +57,13 @@ class Component(CommonInterface):
         bucket_name = params.get(KEY_BUCKET_NAME)
         if service_account_json_key:
             service_account_json_key = KeyCredentials(service_account_json_key).key
-        storage_client = StorageClient(bucket_name,
-                                       service_account_json_key=service_account_json_key,
-                                       client_id_credentials=client_id_credentials)
+
+        try:
+            storage_client = StorageClient(bucket_name,
+                                           service_account_json_key=service_account_json_key,
+                                           client_id_credentials=client_id_credentials)
+        except ValueError as value_error:
+            raise UserException(value_error)
 
         files_and_tables = self.get_files_and_tables()
         append_date = params[KEY_APPENDDATE]
@@ -74,9 +77,12 @@ class Component(CommonInterface):
         return in_tables + in_files
 
     def upload_file(self, storage_client, bucket_name, file, append_date):
-        source_file_path = file.full_path
-        destination_blob_name = self._get_file_destination_name(file.name, append_date)
-        storage_client.upload_blob(bucket_name, source_file_path, destination_blob_name)
+        try:
+            source_file_path = file.full_path
+            destination_blob_name = self._get_file_destination_name(file.name, append_date)
+            storage_client.upload_blob(bucket_name, source_file_path, destination_blob_name)
+        except GoogleAuthError as google_error:
+            raise UserException(f"Upload failed after retries due to : {google_error}")
 
     @staticmethod
     def _get_file_destination_name(file_path, append_date):
@@ -99,7 +105,7 @@ class KeyCredentials:
     def parse_key_string(key_string):
         try:
             key = json.loads(key_string, strict=False)
-        except ValueError:
+        except (ValueError, TypeError):
             raise UserException("The service account key format is incorrect, copy and paste the whole JSON content "
                                 "of the key file into the text field")
         return key
@@ -111,7 +117,7 @@ class KeyCredentials:
                 missing_fields.append(par)
 
         if missing_fields:
-            raise ValueError(f'Google service account key is missing mandatory fields: {missing_fields} ')
+            raise UserException(f'Google service account key is missing mandatory fields: {missing_fields} ')
 
 
 """
