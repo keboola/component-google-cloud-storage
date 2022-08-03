@@ -11,6 +11,12 @@
       "description": "Google Cloud Storage bucket name, e.g. my_gcs_bucket",
       "propertyOrder": 10
     },
+    "folder_name": {
+      "type": "string",
+      "title": "Folder name",
+      "description": "Folder in Google Cloud Storage bucket",
+      "propertyOrder": 20
+    },
     "append_date": {
       "type": "boolean",
       "title": "Append timestamp",
