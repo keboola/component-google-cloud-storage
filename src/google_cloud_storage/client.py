@@ -1,4 +1,5 @@
 import logging
+import os
 from google.cloud import storage
 from google.auth.transport import requests
 from google.oauth2.credentials import Credentials as ClientIdCredentials
@@ -61,5 +62,8 @@ class StorageClient(storage.Client):
     def upload_blob(self, bucket_name, source_file_path, destination_blob_name):
         bucket = self.bucket(bucket_name)
         blob = bucket.blob(destination_blob_name)
-        blob.upload_from_filename(source_file_path)
-        logging.info(f"File {source_file_path} uploaded to {destination_blob_name}.")
+        if os.path.isfile(source_file_path):
+            blob.upload_from_filename(source_file_path)
+            logging.info(f"File {source_file_path} uploaded to {destination_blob_name}.")
+        else:
+            logging.info(f"Skipping: {source_file_path} - is a directory.")

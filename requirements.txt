@@ -1,4 +1,4 @@
 mock
 freezegun
 keboola.component
-google-cloud-storage
+google-cloud-storage==2.7.0

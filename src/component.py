@@ -7,6 +7,8 @@ import os
 import json
 from datetime import datetime
 from pathlib import Path
+
+import keboola.component.dao
 from keboola.component import CommonInterface
 from google_cloud_storage.client import StorageClient
 from google.auth.exceptions import GoogleAuthError
@@ -50,9 +52,6 @@ class Component(CommonInterface):
             exit(1)
 
     def run(self):
-        '''
-        Main execution code
-        '''
         params = self.configuration.parameters
         service_account_json_key = params.get(KEY_SERVICE_ACCOUNT)
         client_id_credentials = self.configuration.oauth_credentials
@@ -82,10 +81,16 @@ class Component(CommonInterface):
         in_files = [item for sublist in in_files_per_tag.values() for item in sublist]
         return in_tables + in_files
 
-    def upload_file(self, storage_client, bucket_name, folder_name, file, append_date):
+    def upload_file(self, storage_client, bucket_name, destination_folder_name, file, append_date):
         try:
             source_file_path = file.full_path
-            destination_blob_name = self._get_file_destination_name(folder_name, file.name, append_date)
+            if os.path.isdir(source_file_path):
+                self._process_folder_upload(local_folder_path=source_file_path,
+                                            destination_folder_name=destination_folder_name,
+                                            storage_client=storage_client,
+                                            append_date=append_date,
+                                            bucket_name=bucket_name)
+            destination_blob_name = self._get_file_destination_name(destination_folder_name, file, append_date)
             storage_client.upload_blob(bucket_name, source_file_path, destination_blob_name)
         except GoogleAuthError as google_error:
             raise UserException(f"Upload failed after retries due to : {google_error}")
@@ -94,14 +99,46 @@ class Component(CommonInterface):
         except ValueError as e:
             raise UserException(e) from e
 
+    def _get_file_destination_name(self, destination_folder_name, file, append_date):
+        if isinstance(file, keboola.component.dao.TableDefinition):
+            src_folder = self.tables_in_path
+        elif isinstance(file, keboola.component.dao.FileDefinition):
+            src_folder = self.files_in_path
+        else:
+            raise UserException("Unknown file type.")
+
+        return self._create_filename(file.full_path, src_folder, destination_folder_name, append_date)
+
     @staticmethod
-    def _get_file_destination_name(folder_name, file_path, append_date):
+    def _create_filename(full_path, src_folder, destination_folder_name, append_date):
+        rel_path = os.path.relpath(full_path, src_folder)
+        if destination_folder_name:
+            rel_path = os.path.join(destination_folder_name, rel_path)
+
         timestamp_suffix = ''
         if append_date:
             timestamp_suffix = "_" + str(datetime.utcnow().strftime('%Y%m%d%H%M%S'))
-        file_name, file_extension = os.path.splitext(os.path.basename(file_path))
-        new_file_name = "".join([folder_name, file_name, timestamp_suffix, file_extension])
-        return new_file_name
+        file_name, file_extension = os.path.splitext(os.path.basename(full_path))
+
+        dst_path = os.path.dirname(rel_path)
+        path_w_filename = os.path.join(dst_path, file_name)
+        path_w_timestamp = path_w_filename + timestamp_suffix
+        path_w_extension = path_w_timestamp + file_extension
+        return path_w_extension
+
+    def _process_folder_upload(self, local_folder_path, destination_folder_name,
+                               append_date, bucket_name, storage_client):
+        for dirpath, dirnames, filenames in os.walk(local_folder_path):
+            for filename in filenames:
+                if not filename.endswith(".manifest"):
+                    full_path = os.path.join(dirpath, filename)
+                    if os.path.isfile(full_path):
+                        destination_blob_name = self._create_filename(full_path=full_path,
+                                                                      src_folder=self.files_in_path,
+                                                                      destination_folder_name=destination_folder_name,
+                                                                      append_date=append_date)
+
+                        storage_client.upload_blob(bucket_name, full_path, destination_blob_name)
 
 
 class KeyCredentials:
