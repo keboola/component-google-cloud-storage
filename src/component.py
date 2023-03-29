@@ -22,8 +22,6 @@ KEY_FOLDER_NAME = "folder_name"
 REQUIRED_PARAMETERS = [KEY_BUCKET_NAME]
 REQUIRED_IMAGE_PARS = []
 
-APP_VERSION = '1.0.0'
-
 
 class UserException(Exception):
     pass
