@@ -21,6 +21,10 @@ class StorageClient(storage.Client):
                                                                   client_id_credentials,
                                                                   service_account_json_key)
         super().__init__(credentials=credentials, project=project_name)
+        self.log_messages = []
+
+    def __del__(self):
+        self.write_log_messages(print_rest=True)
 
     def _get_storage_credentials(self, bucket_name, client_id_credentials, service_account_json_key):
         if service_account_json_key:
@@ -64,6 +68,14 @@ class StorageClient(storage.Client):
         blob = bucket.blob(destination_blob_name)
         if os.path.isfile(source_file_path):
             blob.upload_from_filename(source_file_path)
-            logging.info(f"File {source_file_path} uploaded to {destination_blob_name}.")
+            self.write_log_messages(f"File {source_file_path} uploaded to {destination_blob_name}.\n")
         else:
-            logging.info(f"Skipping: {source_file_path} - is a directory.")
+            self.write_log_messages(f"Skipping: {source_file_path} - is a directory.\n")
+
+    def write_log_messages(self, message='', print_rest=False):
+        self.log_messages.append(message)
+
+        if len(self.log_messages) >= 10 or print_rest:
+            if self.log_messages:
+                logging.info(''.join(self.log_messages))
+                self.log_messages.clear()
