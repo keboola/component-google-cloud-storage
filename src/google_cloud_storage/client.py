@@ -1,5 +1,8 @@
 import logging
 import os
+
+import backoff
+import google.api_core.exceptions
 from google.cloud import storage
 from google.auth.transport import requests
 from google.oauth2.credentials import Credentials as ClientIdCredentials
@@ -63,6 +66,7 @@ class StorageClient(storage.Client):
                      f"service account")
         return credentials, project_name
 
+    @backoff.on_exception(backoff.expo, google.api_core.exceptions.ServiceUnavailable, max_time=60)
     def upload_blob(self, bucket_name, source_file_path, destination_blob_name):
         bucket = self.bucket(bucket_name)
         blob = bucket.blob(destination_blob_name)
